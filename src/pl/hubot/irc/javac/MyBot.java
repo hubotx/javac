@@ -18,64 +18,46 @@ class MyBot extends PircBot
 	public void onMessage(String channel, String sender,
 	                      String login, String hostname, String message)
 	{
-		String[] messageParts = message.split(" ");
-		switch (messageParts[0])
+		if (message.equalsIgnoreCase("!time"))
 		{
-			case "!time":
-				String time = new java.util.Date().toString();
-				sendMessage(channel, sender + ": The time is now " + time);
-				break;
-			case "!javac":
-				if (hasIndex(1, messageParts))
-				{
-					switch (messageParts[1])
-					{
-						case "-version":
-							sendMessage(channel, System.getProperty("java.version"));
-							sendMessage(channel, new ScriptEngineManager().getEngineByName("nashorn").toString());
-							break;
-						default:
-							try
-							{
-								String code = message.substring(6, message.length());
-								ScriptEngineManager manager = new ScriptEngineManager();
-								ScriptEngine engine = manager.getEngineByName("nashorn");
-								sendMessage(channel, engine.eval(code).toString());
-							}
-							catch (ScriptException ex)
-							{
-								sendMessage(channel, ex.getMessage());
-							}
-							break;
-					}
-				}
-				break;
-			case "!banword":
-				if (hasIndex(1, messageParts))
-				{
-					sendMessage(channel, "\"" + messageParts[1] + "\" has added to bad words list.");
-					badWords.add(messageParts[1]);
-				}
-				break;
-			case "!unbanword":
-				if (hasIndex(1, messageParts))
-				{
-					String badWord = messageParts[1];
-					if (badWords.remove(badWord))
-						sendMessage(channel, "\"" + badWord + "\" has removed from bad words list.");
-					else
-						sendMessage(channel, "\"" + badWord + "\" hasn't removed from bad words list.");
-				}
-				break;
+			String time = new java.util.Date().toString();
+			sendMessage(channel, sender + ": The time is now " + time);
+		}
+		else if (message.equalsIgnoreCase("!javac -version"))
+		{
+			ScriptEngineManager manager = new ScriptEngineManager();
+			ScriptEngine engine = manager.getEngineByName("nashorn");
+			sendMessage(channel, System.getProperty("java.version"));
+			sendMessage(channel, engine.toString());
+		}
+		else if (message.startsWith("!javac ".toLowerCase()))
+		{
+			try
+			{
+				String code = message.substring(6, message.length());
+				ScriptEngineManager manager = new ScriptEngineManager();
+				ScriptEngine engine = manager.getEngineByName("nashorn");
+				sendMessage(channel, engine.eval(code).toString());
+			}
+			catch (ScriptException ex)
+			{
+				sendMessage(channel, ex.getMessage());
+			}
+		}
+		else if (message.startsWith("!banword "))
+		{
+			String badWord = message.substring(9, message.length());
+			sendMessage(channel, "\"" + badWord + "\" has added to bad words list.");
+			badWords.add(badWord);
+		}
+		else if (message.startsWith("!unbanword "))
+		{
+			String badWord = message.substring(11, message.length());
+			if (badWords.remove(badWord)) sendMessage(channel, "\"" + badWord + "\" has removed from bad words list.");
+			else sendMessage(channel, "\"" + badWord + "\" hasn't removed from bad words list.");
 		}
 
-		if (!message.startsWith("!banword ") && !message.startsWith("!unbanword "))
-			badWords.stream().filter(message::contains).forEach(badWord -> kick(channel, sender));
-	}
-
-	private <T> boolean hasIndex(int index, T[] array)
-	{
-		return array.length > index;
+		if (!message.startsWith("!banword ") && !message.startsWith("!unbanword ")) badWords.stream().filter(message::contains).forEach(badWord -> kick(channel, sender));
 	}
 
 	private List<String> badWords = new ArrayList<>();
